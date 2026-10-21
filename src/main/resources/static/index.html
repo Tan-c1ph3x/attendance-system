@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Workspace - Attendance Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#0f172a',
+                        brand: '#0ea5e9',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .tab-active { color: #0f172a; border-bottom: 2px solid #0ea5e9; font-weight: 500; }
+        .tab-inactive { color: #64748b; font-weight: 400; border-bottom: 2px solid transparent; }
+        .tab-inactive:hover { color: #334155; border-bottom: 2px solid #cbd5e1; }
+        .hide { display: none !important; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-50 text-brand p-1.5 rounded border border-blue-100 shadow-sm">
+                        <i class="ph ph-clipboard-text text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-semibold text-slate-400 tracking-wider uppercase flex items-center gap-1">
+                            Academic Workspace <span class="text-slate-300">/</span> <span id="header-breadcrumb" class="text-slate-600">Overview</span>
+                        </div>
+                        <div class="text-xs text-slate-400" id="header-status">Loading today...</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-green-200 bg-green-50 text-green-700 text-xs font-medium">
+                        <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                        System live
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs font-semibold shadow-sm">
+                        AS
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-8 -mb-px text-sm" id="main-nav">
+                <button onclick="switchTab('overview')" class="tab-btn tab-active pb-3 px-1 transition-colors" data-tab="overview">Overview</button>
+                <button onclick="switchTab('students')" class="tab-btn tab-inactive pb-3 px-1 transition-colors" data-tab="students">Students</button>
+                <button onclick="switchTab('history')" class="tab-btn tab-inactive pb-3 px-1 transition-colors" data-tab="history">Attendance history</button>
+                <button onclick="switchTab('reports')" class="tab-btn tab-inactive pb-3 px-1 transition-colors" data-tab="reports">Reports</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <!-- ================= OVERVIEW TAB ================= -->
+        <div id="view-overview" class="view-section">
+            <div class="mb-6">
+                <div class="text-xs font-bold text-brand tracking-widest uppercase mb-1">Teacher / Admin Dashboard</div>
+                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Good morning, Anika.</h1>
+                <p class="text-slate-500 text-sm mt-1">A clear view of today's classroom attendance, ready for your next action.</p>
+            </div>
+
+            <!-- Controls -->
+            <div class="bg-white border border-slate-200 rounded-xl p-3 mb-6 flex flex-wrap items-center gap-4 justify-between shadow-sm">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div class="flex items-center gap-2 text-sm">
+                        <i class="ph ph-calendar-blank text-brand"></i>
+                        <span class="text-slate-600 font-medium">Attendance date</span>
+                        <input type="date" id="overview-date" class="border border-slate-200 rounded-md px-2 py-1 outline-none focus:border-brand text-slate-700 bg-slate-50">
+                    </div>
+                    <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-slate-600 font-medium">Class</span>
+                        <select id="overview-class" class="border border-slate-200 rounded-md px-2 py-1 outline-none focus:border-brand text-slate-700 bg-slate-50 min-w-[120px]">
+                            <option value="All">All classes</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-400 italic">Changes save instantly</div>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-4 w-8 h-1 bg-brand rounded-b-sm"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-xs font-bold text-slate-500 tracking-wider uppercase">Total Students</div>
+                        <div class="p-1.5 bg-slate-50 rounded text-slate-400 border border-slate-100"><i class="ph ph-users text-lg"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1" id="metric-total-students">-</div>
+                    <div class="text-xs text-slate-500" id="metric-total-classes">0 active classes</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-4 w-8 h-1 bg-success rounded-b-sm"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-xs font-bold text-slate-500 tracking-wider uppercase">Marked Today</div>
+                        <div class="p-1.5 bg-slate-50 rounded text-slate-400 border border-slate-100"><i class="ph ph-clipboard-check text-lg"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1" id="metric-marked-today">-</div>
+                    <div class="text-xs text-slate-500" id="metric-marked-percentage">0% of roster</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-4 w-8 h-1 bg-green-500 rounded-b-sm"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-xs font-bold text-slate-500 tracking-wider uppercase">Present</div>
+                        <div class="p-1.5 bg-slate-50 rounded text-slate-400 border border-slate-100"><i class="ph ph-check-circle text-lg"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1" id="metric-present">-</div>
+                    <div class="text-xs text-slate-500" id="metric-present-rate">0% attendance rate</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-4 w-8 h-1 bg-warning rounded-b-sm"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-xs font-bold text-slate-500 tracking-wider uppercase">Needs Attention</div>
+                        <div class="p-1.5 bg-slate-50 rounded text-slate-400 border border-slate-100"><i class="ph ph-file-dashed text-lg"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1" id="metric-attention">0</div>
+                    <div class="text-xs text-slate-500" id="metric-attention-detail">0 absent • 0 late</div>
+                </div>
+            </div>
+
+            <!-- Mark Attendance Section -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm mb-6">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Mark today's attendance</h2>
+                        <p class="text-sm text-slate-500">Choose a status for each student. Your changes are saved directly to the database.</p>
+                    </div>
+                </div>
+                <div class="p-8 bg-slate-50/50 rounded-b-xl" id="attendance-list-container"></div>
+            </div>
+
+            <!-- Pulse / Progress Section -->
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Today's pulse</h2>
+                        <p class="text-sm text-slate-500">Attendance by status</p>
+                    </div>
+                    <div class="text-brand p-1.5 bg-blue-50 rounded border border-blue-100"><i class="ph ph-chart-bar text-lg"></i></div>
+                </div>
+                <div class="p-5">
+                    <div class="bg-[#0f172a] rounded-xl p-6 text-white mb-6 relative overflow-hidden">
+                        <div class="text-xs font-bold tracking-wider uppercase text-slate-400 mb-2">Attendance Rate</div>
+                        <div class="flex items-end justify-between mb-4">
+                            <div class="text-5xl font-bold" id="pulse-rate">0<span class="text-2xl text-slate-400">%</span></div>
+                            <div class="text-xs text-slate-400">of marked records</div>
+                        </div>
+                        <div class="w-full bg-slate-800 rounded-full h-2.5">
+                            <div class="bg-brand h-2.5 rounded-full transition-all duration-500" id="pulse-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center gap-2 text-slate-600"><div class="w-2 h-2 rounded-full bg-success"></div> Present</div>
+                            <div class="font-semibold text-slate-800" id="pulse-present-count">0</div>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center gap-2 text-slate-600"><div class="w-2 h-2 rounded-full bg-warning"></div> Late</div>
+                            <div class="font-semibold text-slate-800" id="pulse-late-count">0</div>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center gap-2 text-slate-600"><div class="w-2 h-2 rounded-full bg-danger"></div> Absent</div>
+                            <div class="font-semibold text-slate-800" id="pulse-absent-count">0</div>
+                        </div>
+                        <div class="pt-4 mt-2 border-t border-slate-100 text-xs text-slate-400">
+                            Tip: use <strong>Late</strong> when a student arrives after the first session.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= STUDENTS TAB ================= -->
+        <div id="view-students" class="view-section hide">
+            <div class="mb-6 flex justify-between items-end">
+                <div>
+                    <div class="text-xs font-bold text-brand tracking-widest uppercase mb-1">Teacher / Admin Dashboard</div>
+                    <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Students</h1>
+                    <p class="text-slate-500 text-sm mt-1">Maintain the class roster that powers every attendance record.</p>
+                </div>
+                <button onclick="openModal('addStudentModal')" class="bg-brand hover:bg-sky-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                    <i class="ph ph-plus font-bold"></i> Add student
+                </button>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                    <div>
+                        <h2 class="font-bold text-slate-800">Student roster</h2>
+                        <p class="text-xs text-slate-500" id="roster-stats">0 students across 0 classes</p>
+                    </div>
+                    <button onclick="openModal('addStudentModal')" class="bg-brand hover:bg-sky-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors shadow-sm flex items-center gap-1.5">
+                        <i class="ph ph-plus font-bold"></i> Add student
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-white border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider">
+                            <tr>
+                                <th class="px-6 py-3 font-medium">Roll number</th>
+                                <th class="px-6 py-3 font-medium">Student</th>
+                                <th class="px-6 py-3 font-medium">Class / section</th>
+                                <th class="px-6 py-3 font-medium text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-table-body" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ATTENDANCE HISTORY TAB ================= -->
+        <div id="view-history" class="view-section hide">
+             <div class="mb-6">
+                <div class="text-xs font-bold text-brand tracking-widest uppercase mb-1">Teacher / Admin Dashboard</div>
+                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Attendance history</h1>
+                <p class="text-slate-500 text-sm mt-1">Review, filter, and correct attendance records from your classes.</p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-3 mb-6 flex flex-wrap items-center gap-4 justify-between shadow-sm">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div class="flex items-center gap-2 text-sm">
+                        <i class="ph ph-calendar-blank text-brand"></i>
+                        <span class="text-slate-600 font-medium">Attendance date</span>
+                        <input type="date" id="history-date" class="border border-slate-200 rounded-md px-2 py-1 outline-none focus:border-brand text-slate-700 bg-slate-50">
+                    </div>
+                    <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-slate-600 font-medium">Class</span>
+                        <select id="history-class" class="border border-slate-200 rounded-md px-2 py-1 outline-none focus:border-brand text-slate-700 bg-slate-50 min-w-[120px]">
+                            <option value="All">All classes</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-400 italic">Changes save instantly</div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-200 bg-slate-50/50">
+                    <h2 class="font-bold text-slate-800">Attendance history</h2>
+                    <p class="text-xs text-slate-500 mb-3" id="history-stats">Showing — 0 records</p>
+                    <div class="flex gap-3">
+                        <div class="relative w-64">
+                            <i class="ph ph-magnifying-glass absolute left-2.5 top-2 text-slate-400"></i>
+                            <input type="text" id="history-search" placeholder="Search student..." class="w-full border border-slate-200 rounded-md pl-8 pr-3 py-1.5 text-sm outline-none focus:border-brand text-slate-700 bg-white">
+                        </div>
+                        <select id="history-status" class="border border-slate-200 rounded-md px-3 py-1.5 text-sm outline-none focus:border-brand text-slate-700 bg-white">
+                            <option value="All">All statuses</option>
+                            <option value="Present">Present</option>
+                            <option value="Late">Late</option>
+                            <option value="Absent">Absent</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-white border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider">
+                            <tr>
+                                <th class="px-6 py-3 font-medium">Date</th>
+                                <th class="px-6 py-3 font-medium">Student (Roll)</th>
+                                <th class="px-6 py-3 font-medium">Class</th>
+                                <th class="px-6 py-3 font-medium">Status</th>
+                                <th class="px-6 py-3 font-medium text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= REPORTS TAB ================= -->
+        <div id="view-reports" class="view-section hide">
+            <div class="mb-6">
+                <div class="text-xs font-bold text-brand tracking-widest uppercase mb-1">Teacher / Admin Dashboard</div>
+                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Reports</h1>
+                <p class="text-slate-500 text-sm mt-1">Understand attendance patterns across the selected academic month.</p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-3 mb-6 flex flex-wrap items-center gap-4 justify-between shadow-sm">
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div class="flex items-center gap-2 text-sm">
+                        <i class="ph ph-calendar-blank text-brand"></i>
+                        <span class="text-slate-600 font-medium">Report Month</span>
+                        <input type="month" id="report-month" class="border border-slate-200 rounded-md px-2 py-1 outline-none focus:border-brand text-slate-700 bg-slate-50">
+                    </div>
+                    <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-slate-600 font-medium">Class</span>
+                        <select id="report-class" class="border border-slate-200 rounded-md px-2 py-1 outline-none focus:border-brand text-slate-700 bg-slate-50 min-w-[120px]">
+                            <option value="All">All classes</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                        <i class="ph ph-printer"></i> Print / PDF
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-4 w-8 h-1 bg-brand rounded-b-sm"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-xs font-bold text-slate-500 tracking-wider uppercase">Records</div>
+                        <div class="p-1.5 bg-slate-50 rounded text-slate-400 border border-slate-100"><i class="ph ph-file-text text-lg"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1" id="report-total-records">-</div>
+                    <div class="text-xs text-slate-500">attendance entries</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-4 w-8 h-1 bg-success rounded-b-sm"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-xs font-bold text-slate-500 tracking-wider uppercase">Present</div>
+                        <div class="p-1.5 bg-slate-50 rounded text-slate-400 border border-slate-100"><i class="ph ph-check-circle text-lg"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1" id="report-present-count">-</div>
+                    <div class="text-xs text-slate-500">students present</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-4 w-8 h-1 bg-danger rounded-b-sm"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-xs font-bold text-slate-500 tracking-wider uppercase">Absent</div>
+                        <div class="p-1.5 bg-slate-50 rounded text-slate-400 border border-slate-100"><i class="ph ph-x-circle text-lg"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1" id="report-absent-count">-</div>
+                    <div class="text-xs text-slate-500">follow-up needed</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 right-4 w-8 h-1 bg-success rounded-b-sm"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="text-xs font-bold text-slate-500 tracking-wider uppercase">Monthly Rate</div>
+                        <div class="p-1.5 bg-slate-50 rounded text-slate-400 border border-slate-100"><i class="ph ph-trend-up text-lg"></i></div>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1" id="report-monthly-rate">-</div>
+                    <div class="text-xs text-slate-500">present / all records</div>
+                </div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+                <h2 class="text-lg font-bold text-slate-800 mb-1">Student Breakdown</h2>
+                <p class="text-sm text-slate-500 mb-4" id="report-breakdown-subtitle">For selected month and class</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 border-y border-slate-200 text-xs text-slate-500 uppercase tracking-wider">
+                            <tr>
+                                <th class="px-4 py-2 font-medium">Student</th>
+                                <th class="px-4 py-2 font-medium text-center">Total</th>
+                                <th class="px-4 py-2 font-medium text-center">Present</th>
+                                <th class="px-4 py-2 font-medium text-center">Late</th>
+                                <th class="px-4 py-2 font-medium text-center">Absent</th>
+                                <th class="px-4 py-2 font-medium text-right">%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal: Add Student -->
+    <div id="addStudentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hide opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-200" id="addStudentModalContent">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 class="text-lg font-bold text-slate-800">Add new student</h2>
+                <button onclick="closeModal('addStudentModal')" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form id="addStudentForm" onsubmit="handleAddStudent(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Roll Number *</label>
+                            <input type="text" id="stu-roll" required class="w-full border border-slate-300 rounded-md px-3 py-2 outline-none focus:border-brand focus:ring-1 focus:ring-brand text-sm placeholder-slate-400" placeholder="e.g. CS-101">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Student Name *</label>
+                            <input type="text" id="stu-name" required class="w-full border border-slate-300 rounded-md px-3 py-2 outline-none focus:border-brand focus:ring-1 focus:ring-brand text-sm placeholder-slate-400" placeholder="e.g. John Doe">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Class / Section *</label>
+                            <input type="text" id="stu-class" required class="w-full border border-slate-300 rounded-md px-3 py-2 outline-none focus:border-brand focus:ring-1 focus:ring-brand text-sm placeholder-slate-400" placeholder="e.g. Year 1 - A">
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button type="button" onclick="closeModal('addStudentModal')" class="px-4 py-2 border border-slate-300 rounded-md text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-brand text-white rounded-md text-sm font-medium hover:bg-sky-600 transition-colors shadow-sm">Save student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Backend REST API & UI Logic -->
+    <script>
+        let students = [];
+        let attendance = [];
+        
+        let currentDate = new Date().toISOString().split('T')[0];
+        let currentMonth = currentDate.substring(0, 7);
+
+        // Fetch data from Java backend
+        async function fetchAllData() {
+            try {
+                const [stuRes, attRes] = await Promise.all([
+                    fetch('/api/students'),
+                    fetch('/api/attendance')
+                ]);
+                students = await stuRes.json();
+                attendance = await attRes.json();
+                updateAllViews();
+            } catch (err) {
+                console.error("Backend error or server starting up:", err);
+            }
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('header-status').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+            
+            document.getElementById('overview-date').value = currentDate;
+            document.getElementById('history-date').value = currentDate;
+            document.getElementById('report-month').value = currentMonth;
+
+            document.getElementById('overview-date').addEventListener('change', (e) => { currentDate = e.target.value; updateOverviewView(); });
+            document.getElementById('overview-class').addEventListener('change', updateOverviewView);
+            
+            document.getElementById('history-date').addEventListener('change', updateHistoryView);
+            document.getElementById('history-class').addEventListener('change', updateHistoryView);
+            document.getElementById('history-search').addEventListener('input', updateHistoryView);
+            document.getElementById('history-status').addEventListener('change', updateHistoryView);
+
+            document.getElementById('report-month').addEventListener('change', updateReportsView);
+            document.getElementById('report-class').addEventListener('change', updateReportsView);
+
+            fetchAllData();
+        });
+
+        // Navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('tab-inactive');
+            });
+            const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+            if(activeBtn) {
+                activeBtn.classList.remove('tab-inactive');
+                activeBtn.classList.add('tab-active');
+                document.getElementById('header-breadcrumb').textContent = activeBtn.textContent;
+            }
+
+            document.querySelectorAll('.view-section').forEach(view => view.classList.add('hide'));
+            document.getElementById(`view-${tabId}`).classList.remove('hide');
+
+            updateAllViews();
+        }
+
+        function updateClassDropdowns() {
+            const classes = [...new Set(students.map(s => s.studentClass))].sort();
+            const dropdowns = ['overview-class', 'history-class', 'report-class'];
+            
+            dropdowns.forEach(id => {
+                const el = document.getElementById(id);
+                const currentVal = el.value;
+                el.innerHTML = '<option value="All">All classes</option>';
+                classes.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    el.appendChild(opt);
+                });
+                if(classes.includes(currentVal)) el.value = currentVal;
+            });
+        }
+
+        function updateAllViews() {
+            updateClassDropdowns();
+            updateOverviewView();
+            updateStudentsView();
+            updateHistoryView();
+            updateReportsView();
+        }
+
+        // Overview
+        function updateOverviewView() {
+            const selectedClass = document.getElementById('overview-class').value;
+            const targetDate = document.getElementById('overview-date').value;
+            
+            let filteredStudents = students;
+            if (selectedClass !== 'All') {
+                filteredStudents = students.filter(s => s.studentClass === selectedClass);
+            }
+
+            const activeClassesCount = new Set(students.map(s => s.studentClass)).size;
+            const todayRecords = attendance.filter(a => a.date === targetDate);
+            let markedCount = 0;
+            let presentCount = 0;
+            let lateCount = 0;
+            let absentCount = 0;
+
+            filteredStudents.forEach(s => {
+                const record = todayRecords.find(a => a.roll === s.roll);
+                if (record) {
+                    markedCount++;
+                    if (record.status === 'Present') presentCount++;
+                    if (record.status === 'Late') lateCount++;
+                    if (record.status === 'Absent') absentCount++;
+                }
+            });
+
+            const total = filteredStudents.length;
+            const markPct = total === 0 ? 0 : Math.round((markedCount / total) * 100);
+            const presentPct = total === 0 ? 0 : Math.round((presentCount / total) * 100);
+            const attendanceRate = markedCount === 0 ? 0 : Math.round(((presentCount + lateCount) / markedCount) * 100);
+
+            document.getElementById('metric-total-students').textContent = total || '-';
+            document.getElementById('metric-total-classes').textContent = `${activeClassesCount} active classes total`;
+            document.getElementById('metric-marked-today').textContent = markedCount || '-';
+            document.getElementById('metric-marked-percentage').textContent = `${markPct}% of roster`;
+            document.getElementById('metric-present').textContent = presentCount || '-';
+            document.getElementById('metric-present-rate').textContent = `${presentPct}% of total roster`;
+
+            const needsAttention = absentCount + lateCount;
+            document.getElementById('metric-attention').textContent = needsAttention || '0';
+            document.getElementById('metric-attention-detail').textContent = `${absentCount} absent • ${lateCount} late`;
+
+            document.getElementById('pulse-rate').innerHTML = `${attendanceRate}<span class="text-2xl text-slate-400">%</span>`;
+            document.getElementById('pulse-bar').style.width = `${attendanceRate}%`;
+            document.getElementById('pulse-present-count').textContent = presentCount;
+            document.getElementById('pulse-late-count').textContent = lateCount;
+            document.getElementById('pulse-absent-count').textContent = absentCount;
+
+            renderAttendanceList(filteredStudents, todayRecords, targetDate);
+        }
+
+        function renderAttendanceList(filteredStudents, todayRecords, targetDate) {
+            const container = document.getElementById('attendance-list-container');
+            
+            if (filteredStudents.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="mx-auto w-12 h-12 bg-white rounded-full flex items-center justify-center border border-slate-200 mb-3 text-slate-300">
+                            <i class="ph ph-users text-2xl"></i>
+                        </div>
+                        <h3 class="text-slate-800 font-medium mb-1">No students found</h3>
+                        <p class="text-slate-500 text-sm mb-4">Add a student or select a different class to start taking attendance.</p>
+                        <button onclick="switchTab('students'); openModal('addStudentModal')" class="bg-brand text-white px-4 py-2 rounded-md text-sm font-medium shadow-sm">
+                            <i class="ph ph-plus"></i> Add student
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="space-y-2">';
+            filteredStudents.forEach(student => {
+                const record = todayRecords.find(a => a.roll === student.roll);
+                const status = record ? record.status : null;
+
+                html += `
+                    <div class="bg-white border ${status ? 'border-l-4 border-slate-200' : 'border-slate-200 border-l-[1px]'} 
+                        ${status === 'Present' ? '!border-l-success' : ''}
+                        ${status === 'Late' ? '!border-l-warning' : ''}
+                        ${status === 'Absent' ? '!border-l-danger' : ''}
+                        p-3 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-all hover:shadow-md">
+                        
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-bold shrink-0">
+                                ${student.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-medium text-slate-800 text-sm">${student.name}</div>
+                                <div class="text-xs text-slate-500">${student.roll} • ${student.studentClass}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 self-end sm:self-auto shrink-0 bg-slate-50 p-1 rounded-md border border-slate-100">
+                            <button onclick="markRecord('${student.roll}', '${targetDate}', 'Present')" 
+                                class="px-3 py-1.5 rounded text-xs font-medium transition-all w-20
+                                ${status === 'Present' ? 'bg-success text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200'}">
+                                Present
+                            </button>
+                            <button onclick="markRecord('${student.roll}', '${targetDate}', 'Late')" 
+                                class="px-3 py-1.5 rounded text-xs font-medium transition-all w-20
+                                ${status === 'Late' ? 'bg-warning text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200'}">
+                                Late
+                            </button>
+                            <button onclick="markRecord('${student.roll}', '${targetDate}', 'Absent')" 
+                                class="px-3 py-1.5 rounded text-xs font-medium transition-all w-20
+                                ${status === 'Absent' ? 'bg-danger text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200'}">
+                                Absent
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Mark Attendance -> POST to Java API
+        async function markRecord(roll, date, status) {
+            await fetch('/api/attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roll, date, status })
+            });
+            await fetchAllData();
+        }
+
+        // Students Table
+        function updateStudentsView() {
+            const tbody = document.getElementById('students-table-body');
+            document.getElementById('roster-stats').textContent = `${students.length} students across ${new Set(students.map(s=>s.studentClass)).size} classes`;
+
+            if (students.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-slate-500">
+                            <div class="mx-auto w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                <i class="ph ph-user text-2xl text-slate-300"></i>
+                            </div>
+                            <div class="font-medium text-slate-700">Your roster is empty</div>
+                            <div class="text-xs mt-1">Add your first student to begin managing attendance.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            students.forEach(s => {
+                html += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-3 border-b border-slate-100"><span class="font-mono text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">${s.roll}</span></td>
+                        <td class="px-6 py-3 border-b border-slate-100 font-medium text-slate-800">${s.name}</td>
+                        <td class="px-6 py-3 border-b border-slate-100">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                ${s.studentClass}
+                            </span>
+                        </td>
+                        <td class="px-6 py-3 border-b border-slate-100 text-right">
+                            <button onclick="deleteStudent('${s.roll}')" class="text-slate-400 hover:text-danger p-1 rounded transition-colors" title="Remove Student">
+                                <i class="ph ph-trash text-lg"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // Add Student -> POST to Java API
+        async function handleAddStudent(e) {
+            e.preventDefault();
+            const roll = document.getElementById('stu-roll').value.trim();
+            const name = document.getElementById('stu-name').value.trim();
+            const studentClass = document.getElementById('stu-class').value.trim();
+
+            if (!roll || !name || !studentClass) return;
+
+            const res = await fetch('/api/students', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roll, name, studentClass })
+            });
+
+            if (!res.ok) {
+                const msg = await res.text();
+                alert(msg || "Error adding student");
+                return;
+            }
+
+            document.getElementById('addStudentForm').reset();
+            closeModal('addStudentModal');
+            await fetchAllData();
+        }
+
+        // Delete Student -> DELETE to Java API
+        async function deleteStudent(roll) {
+            if(confirm('Are you sure you want to remove this student and their attendance records?')) {
+                await fetch(`/api/students/${encodeURIComponent(roll)}`, { method: 'DELETE' });
+                await fetchAllData();
+            }
+        }
+
+        // History View
+        function updateHistoryView() {
+            const date = document.getElementById('history-date').value;
+            const cls = document.getElementById('history-class').value;
+            const search = document.getElementById('history-search').value.toLowerCase();
+            const statusF = document.getElementById('history-status').value;
+
+            let recordsToShow = attendance.filter(a => {
+                if(date && a.date !== date) return false;
+                if(statusF !== 'All' && a.status !== statusF) return false;
+                
+                const student = students.find(s => s.roll === a.roll);
+                if(!student) return false;
+
+                if(cls !== 'All' && student.studentClass !== cls) return false;
+                if(search && !(student.name.toLowerCase().includes(search) || student.roll.toLowerCase().includes(search))) return false;
+                
+                return true;
+            });
+
+            document.getElementById('history-stats').innerHTML = `Showing &mdash; ${recordsToShow.length} records`;
+            const tbody = document.getElementById('history-table-body');
+
+            if (recordsToShow.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                            <div class="mx-auto w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                <i class="ph ph-file-dashed text-2xl text-slate-300"></i>
+                            </div>
+                            <div class="font-medium text-slate-700">No attendance records found</div>
+                            <div class="text-xs mt-1">Try a different date, class, or status filter.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            recordsToShow.sort((a, b) => {
+                const s1 = students.find(s => s.roll === a.roll)?.name || '';
+                const s2 = students.find(s => s.roll === b.roll)?.name || '';
+                return s1.localeCompare(s2);
+            });
+
+            let html = '';
+            recordsToShow.forEach(r => {
+                const student = students.find(s => s.roll === r.roll);
+                let statusBadge = '';
+                if(r.status === 'Present') statusBadge = '<span class="px-2.5 py-1 text-[10px] font-bold rounded bg-green-100 text-green-700 uppercase tracking-wide">Present</span>';
+                if(r.status === 'Late') statusBadge = '<span class="px-2.5 py-1 text-[10px] font-bold rounded bg-yellow-100 text-yellow-700 uppercase tracking-wide">Late</span>';
+                if(r.status === 'Absent') statusBadge = '<span class="px-2.5 py-1 text-[10px] font-bold rounded bg-red-100 text-red-700 uppercase tracking-wide">Absent</span>';
+
+                html += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-3 border-b border-slate-100 whitespace-nowrap">${r.date}</td>
+                        <td class="px-6 py-3 border-b border-slate-100">
+                            <div class="font-medium text-slate-800">${student.name}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${student.roll}</div>
+                        </td>
+                        <td class="px-6 py-3 border-b border-slate-100 text-xs">${student.studentClass}</td>
+                        <td class="px-6 py-3 border-b border-slate-100">${statusBadge}</td>
+                        <td class="px-6 py-3 border-b border-slate-100 text-right">
+                            <button onclick="clearRecord('${r.roll}', '${r.date}')" class="text-slate-400 hover:text-danger text-xs font-medium underline transition-colors">Clear</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // Clear record -> DELETE to Java API
+        async function clearRecord(roll, date) {
+            await fetch(`/api/attendance?roll=${encodeURIComponent(roll)}&date=${encodeURIComponent(date)}`, {
+                method: 'DELETE'
+            });
+            await fetchAllData();
+        }
+
+        // Reports View
+        function updateReportsView() {
+            const monthStr = document.getElementById('report-month').value;
+            const cls = document.getElementById('report-class').value;
+
+            let targetStudents = students;
+            if(cls !== 'All') {
+                targetStudents = students.filter(s => s.studentClass === cls);
+            }
+
+            const monthRecords = attendance.filter(a => {
+                return a.date.startsWith(monthStr) && targetStudents.some(s => s.roll === a.roll);
+            });
+
+            const totalRecords = monthRecords.length;
+            const absent = monthRecords.filter(a => a.status === 'Absent').length;
+            const purePresent = monthRecords.filter(a => a.status === 'Present').length;
+            const lateCount = monthRecords.filter(a => a.status === 'Late').length;
+            
+            const rate = totalRecords === 0 ? 0 : Math.round(((purePresent + lateCount) / totalRecords) * 100);
+
+            document.getElementById('report-total-records').textContent = totalRecords || '-';
+            document.getElementById('report-present-count').textContent = purePresent || '-';
+            document.getElementById('report-absent-count').textContent = absent || '-';
+            document.getElementById('report-monthly-rate').textContent = totalRecords ? `${rate}%` : '-';
+
+            const tbody = document.getElementById('report-table-body');
+            
+            if (targetStudents.length === 0 || totalRecords === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-slate-500 bg-white">
+                            <div class="mx-auto w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                <i class="ph ph-chart-bar text-2xl text-slate-300"></i>
+                            </div>
+                            <div class="font-medium text-slate-700">No report data for this month</div>
+                            <div class="text-xs mt-1">Record attendance from the overview to build your report.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            targetStudents.forEach(s => {
+                const sRecords = monthRecords.filter(a => a.roll === s.roll);
+                const sTotal = sRecords.length;
+                const sPresent = sRecords.filter(a => a.status === 'Present').length;
+                const sLate = sRecords.filter(a => a.status === 'Late').length;
+                const sAbsent = sRecords.filter(a => a.status === 'Absent').length;
+                const sRate = sTotal === 0 ? 0 : Math.round(((sPresent + sLate) / sTotal) * 100);
+
+                let rateColor = 'text-slate-600';
+                if(sRate < 75) rateColor = 'text-danger font-bold';
+                else if(sRate > 90) rateColor = 'text-success font-bold';
+
+                html += `
+                    <tr class="hover:bg-slate-50 transition-colors bg-white">
+                        <td class="px-4 py-3 border-b border-slate-100">
+                            <div class="font-medium text-slate-800 text-sm">${s.name}</div>
+                            <div class="text-[10px] text-slate-400">${s.roll}</div>
+                        </td>
+                        <td class="px-4 py-3 border-b border-slate-100 text-center font-medium text-slate-600">${sTotal}</td>
+                        <td class="px-4 py-3 border-b border-slate-100 text-center text-success">${sPresent}</td>
+                        <td class="px-4 py-3 border-b border-slate-100 text-center text-warning">${sLate}</td>
+                        <td class="px-4 py-3 border-b border-slate-100 text-center text-danger">${sAbsent}</td>
+                        <td class="px-4 py-3 border-b border-slate-100 text-right ${rateColor}">${sRate}%</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // Modal Helpers
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            const content = document.getElementById(id + 'Content');
+            modal.classList.remove('hide');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            const content = document.getElementById(id + 'Content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hide');
+            }, 200);
+        }
+    </script>
+</body>
+</html>
